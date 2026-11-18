@@ -252,38 +252,49 @@ class _GameState extends State<Game> {
      ])));
    });
  }
+
  Widget _play(){
   final p=puzzles[level];
-  return SingleChildScrollView(padding:const EdgeInsets.all(18),
-   child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
-    Center(child:Container(padding:const EdgeInsets.symmetric(horizontal:25,vertical:12),
-     decoration:BoxDecoration(color:const Color(0xff80369b),borderRadius:BorderRadius.circular(22),
-      border:Border.all(color:const Color(0xffffd67c),width:2)),
-     child:Text('المرحلة '+(level+1).toString()+' • '+p.category,
-      style:const TextStyle(color:Colors.white,fontSize:20,fontWeight:FontWeight.bold)))),
-    const SizedBox(height:24),
-    Container(padding:const EdgeInsets.symmetric(horizontal:20,vertical:35),
-     decoration:BoxDecoration(gradient:const LinearGradient(colors:[Color(0xffffe7b7),Color(0xffffc77c)]),
-      borderRadius:BorderRadius.circular(22),border:Border.all(color:const Color(0xffffb54c),width:3),
-      boxShadow:const [BoxShadow(color:Colors.black38,blurRadius:12,offset:Offset(0,6))]),
-     child:Text(p.question,textAlign:TextAlign.center,
-      style:const TextStyle(fontSize:23,fontWeight:FontWeight.w900,color:Color(0xff322047)))),
-    const SizedBox(height:22),
-    for(var i=0;i<4;i++)
-     Padding(padding:const EdgeInsets.only(bottom:12),child:Material(color:Colors.transparent,
-      child:InkWell(onTap:answered?null:()=>_choose(i),borderRadius:BorderRadius.circular(18),
-       child:Container(padding:const EdgeInsets.all(17),
-        decoration:BoxDecoration(color:answered&&i==p.correct?const Color(0xffa6e8ae):
-         answered&&i==chosen?const Color(0xffffa7a7):const Color(0xffffd9a3),
-         borderRadius:BorderRadius.circular(18),border:Border.all(color:const Color(0xffd29a57),width:2)),
-        child:Text(p.options[i],textAlign:TextAlign.center,
-         style:const TextStyle(color:Color(0xff322047),fontSize:18,fontWeight:FontWeight.bold)))))),
-    if(answered)...[
-     Text(chosen==p.correct?'🌟 أحسنت! إجابة صحيحة':'حاول مرة أخرى!',
-      textAlign:TextAlign.center,style:const TextStyle(fontSize:19,color:Color(0xffffd67c))),
-     _gameButton(chosen==p.correct?'المرحلة التالية':'إعادة المحاولة',_next),
-    ]else _gameButton('💡 تلميح — 20 نقطة',_hint,purple:true),
-   ]));
+  return LayoutBuilder(builder:(context,size)=>SingleChildScrollView(
+   padding:const EdgeInsets.symmetric(horizontal:14,vertical:8),
+   child:ConstrainedBox(constraints:BoxConstraints(minHeight:size.maxHeight),
+    child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
+     Text('المرحلة '+(level+1).toString()+' • '+p.category,
+      textAlign:TextAlign.center,style:const TextStyle(fontSize:15,color:Color(0xffffd67c))),
+     const SizedBox(height:8),
+     Container(padding:const EdgeInsets.symmetric(horizontal:12,vertical:18),
+      decoration:BoxDecoration(gradient:const LinearGradient(
+       colors:[Color(0xffffe7b7),Color(0xffffc77c)]),
+       borderRadius:BorderRadius.circular(19),
+       border:Border.all(color:const Color(0xffffb54c),width:2)),
+      child:Text(p.question,textAlign:TextAlign.center,
+       style:const TextStyle(fontSize:18,fontWeight:FontWeight.w800,color:Color(0xff322047)))),
+     const SizedBox(height:12),
+     for(var i=0;i<4;i++)
+      Padding(padding:const EdgeInsets.only(bottom:9),
+       child:Material(color:Colors.transparent,
+        child:InkWell(onTap:answered||hidden.contains(i)?null:()=>_choose(i),
+         borderRadius:BorderRadius.circular(15),
+         child:Container(padding:const EdgeInsets.symmetric(vertical:11,horizontal:10),
+          decoration:BoxDecoration(
+           color:hidden.contains(i)?const Color(0xff574d65):
+            answered&&i==chosen?
+             (chosen==p.correct?const Color(0xffa2e8a9):const Color(0xffffa9a9)):
+             const Color(0xffffd9a3),
+           borderRadius:BorderRadius.circular(15),
+           border:Border.all(color:const Color(0xffd29a57),width:2)),
+          child:Text(hidden.contains(i)?'—':p.options[i],textAlign:TextAlign.center,
+           style:TextStyle(color:hidden.contains(i)?Colors.white54:const Color(0xff322047),
+            fontSize:16,fontWeight:FontWeight.bold)))))),
+     if(answered)
+      _gameButton(chosen==p.correct?'المرحلة التالية':'إعادة المحاولة',_next),
+     const SizedBox(height:4),
+     Row(children:[
+      Expanded(child:_gameButton('💡 كشف 50',_hint,purple:true)),
+      const SizedBox(width:8),
+      Expanded(child:_gameButton('✂️ حذف 2 • 20',_removeTwo,purple:true)),
+     ]),
+    ]))));
  }
  Widget _gameButton(String label,VoidCallback callback,{bool purple=false})=>
   Container(margin:const EdgeInsets.symmetric(vertical:6),
@@ -294,7 +305,7 @@ class _GameState extends State<Game> {
     border:Border.all(color:purple?const Color(0xffd6a6ff):const Color(0xffbcff91),width:2)),
    child:TextButton(onPressed:callback,
     child:Padding(padding:const EdgeInsets.symmetric(vertical:8),
-     child:Text(label,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w900,fontSize:17)))));
+     child:Text(label,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w900,fontSize:13)))));
  @override Widget build(BuildContext context)=>Scaffold(
   appBar:AppBar(
    title:Text(inGame?'المرحلة '+(level+1).toString():'🧩 رحلة الألغاز'),
@@ -310,7 +321,14 @@ class _GameState extends State<Game> {
      Chip(label:Text('🏆 '+completed.length.toString()+' / 500'))])),
    LinearProgressIndicator(value:completed.length/500,color:const Color(0xffffd47a),backgroundColor:const Color(0xff483061),minHeight:7),
    Expanded(child:inGame?_play():_map()),
-   Padding(padding:const EdgeInsets.symmetric(horizontal:20),child:_gameButton('🎁 فيديو مكافأة — 50 نقطة',_watch)),
+   Row(children:[
+    Expanded(child:TextButton.icon(onPressed:inGame?null:_daily,
+     icon:const Icon(Icons.calendar_today,size:16),
+     label:const Text('مكافأة يومية',style:TextStyle(fontSize:12)))),
+    Expanded(child:TextButton.icon(onPressed:_watch,
+     icon:const Icon(Icons.smart_display,size:17),
+     label:const Text('فيديو +50',style:TextStyle(fontSize:12)))),
+   ]),
    const Center(child:AdStrip(upper:false)),
   ])),
  );
