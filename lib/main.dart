@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'levels.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -199,54 +200,57 @@ class _GameState extends State<Game> {
   if(n==500)_popup('🏆 تهانينا','أكملت جميع المراحل!');
  }
  @override void dispose(){interstitial?.dispose();rewarded?.dispose();super.dispose();}
+
  Widget _map(){
-  const palette=<Color>[Color(0xff306f60),Color(0xff2d6286),Color(0xff75538f),Color(0xff306c9b),Color(0xff986235),Color(0xff734c98),Color(0xff377a79),Color(0xff89547a),Color(0xff42699e),Color(0xffa27d39)];
-  return ListView.builder(
-   padding:const EdgeInsets.all(14),itemCount:10,
+  const palette=<Color>[Color(0xff397b65),Color(0xff386d90),Color(0xff8262a8),
+   Color(0xff327f95),Color(0xffb0874d),Color(0xff7055a6),
+   Color(0xff36867b),Color(0xff906a88),Color(0xff4e7caa),Color(0xffb08c46)];
+  return ListView.builder(padding:const EdgeInsets.all(12),itemCount:10,
    itemBuilder:(context,region){
     final start=region*50;
     final count=completed.where((i)=>i>=start&&i<start+50).length;
-    return Container(
-     margin:const EdgeInsets.only(bottom:20),
+    return Container(margin:const EdgeInsets.only(bottom:18),
      decoration:BoxDecoration(
-      gradient:LinearGradient(colors:[palette[region],const Color(0xff241344)],begin:Alignment.topLeft,end:Alignment.bottomRight),
+      gradient:LinearGradient(colors:[palette[region],const Color(0xff201339)]),
       borderRadius:BorderRadius.circular(28),
-      border:Border.all(color:const Color(0xffffd77e),width:2),
-      boxShadow:const [BoxShadow(color:Colors.black38,blurRadius:12,offset:Offset(0,5))]),
+      border:Border.all(color:const Color(0xffffd47b),width:2)),
      child:Padding(padding:const EdgeInsets.all(12),child:Column(children:[
-      Text('✦ '+regions[region]+' ✦',textAlign:TextAlign.center,
-       style:const TextStyle(fontSize:22,fontWeight:FontWeight.w900,color:Color(0xffffd77e))),
-      Text('المراحل '+(start+1).toString()+' – '+(start+50).toString()+'   •   '+count.toString()+'/50',
+      Text('✦ '+regions[region]+' ✦',style:const TextStyle(fontSize:21,
+       fontWeight:FontWeight.bold,color:Color(0xffffd77e))),
+      Text('المنطقة '+(region+1).toString()+'  •  '+count.toString()+'/50',
        style:const TextStyle(color:Colors.white70)),
-      const SizedBox(height:14),
-      for(var row=0;row<10;row++)
-       SizedBox(height:62,child:Stack(children:[
-        Positioned.fill(child:CustomPaint(painter:_TrailPainter(row))),
-        Row(mainAxisAlignment:MainAxisAlignment.spaceAround,children:[
-         for(var col=0;col<5;col++)
-          Builder(builder:(context){
-           final index=start+row*5+(row.isEven?col:4-col);
-           final locked=index>opened,done=completed.contains(index);
-           return InkWell(onTap:locked?null:()=>_enter(index),
-            borderRadius:BorderRadius.circular(40),
-            child:Container(width:48,height:48,
+      const SizedBox(height:12),
+      SizedBox(height:1100,child:LayoutBuilder(builder:(context,c){
+       final width=c.maxWidth;
+       Offset pos(int i){
+        final t=i/49.0;
+        return Offset(width*(.5+.34*math.sin(i*math.pi/8)),1070-t*1040);
+       }
+       return Stack(children:[
+        Positioned.fill(child:CustomPaint(painter:_WindingRoadPainter(
+         List.generate(50,pos)))),
+        for(var i=0;i<50;i++)
+         Positioned(left:pos(i).dx-23,top:pos(i).dy-23,
+          child:Builder(builder:(context){
+           final index=start+i,locked=index>opened,done=completed.contains(index);
+           return GestureDetector(onTap:locked?null:()=>_enter(index),
+            child:Container(width:46,height:46,
              decoration:BoxDecoration(shape:BoxShape.circle,
-              gradient:LinearGradient(colors:locked?[const Color(0xff858197),const Color(0xff353047)]
-               :done?[const Color(0xffffe892),const Color(0xffc78419)]
-               :[const Color(0xffd889ff),const Color(0xff7134b7)]),
-              border:Border.all(color:locked?Colors.white38:const Color(0xffffe49c),width:2.4),
-              boxShadow:locked?[]:[const BoxShadow(color:Colors.black38,blurRadius:7,offset:Offset(0,3))]),
-             child:Center(child:locked?const Icon(Icons.lock,color:Colors.white70,size:19):
-              done?const Icon(Icons.star,color:Color(0xff62370b),size:25):
-              Text((index+1).toString(),style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w900))),
-            ));
-          }),
-        ]),
-       ])),
-     ])),
-    );
-   },
-  );
+              gradient:LinearGradient(colors:locked?
+               [const Color(0xff797286),const Color(0xff3e3954)]:
+               done?[const Color(0xffffe68d),const Color(0xffcf8b22)]:
+               [const Color(0xffdc8cff),const Color(0xff8036c0)]),
+              border:Border.all(color:locked?Colors.white38:const Color(0xffffe4a0),width:2.4),
+              boxShadow:const [BoxShadow(color:Colors.black38,blurRadius:6)]),
+             child:Center(child:locked?const Icon(Icons.lock,size:17,color:Colors.white70):
+              done?const Icon(Icons.star,color:Color(0xff70400d)):
+              Text((index+1).toString(),style:const TextStyle(fontSize:13,
+               fontWeight:FontWeight.bold,color:Colors.white))))));
+          })),
+       ]);
+      })),
+     ])));
+   });
  }
  Widget _play(){
   final p=puzzles[level];
@@ -323,4 +327,23 @@ class _TrailPainter extends CustomPainter {
   canvas.drawPath(path,paint);
  }
  @override bool shouldRepaint(covariant _TrailPainter old)=>old.row!=row;
+}
+
+class _WindingRoadPainter extends CustomPainter{
+ final List<Offset> points;
+ const _WindingRoadPainter(this.points);
+ @override void paint(Canvas canvas,Size size){
+  final path=Path()..moveTo(points.first.dx,points.first.dy);
+  for(var i=1;i<points.length;i++){
+   final a=points[i-1],b=points[i];
+   path.lineTo(b.dx,b.dy);
+  }
+  canvas.drawPath(path,Paint()..color=const Color(0xff674726)
+   ..strokeWidth=31..strokeCap=StrokeCap.round..strokeJoin=StrokeJoin.round
+   ..style=PaintingStyle.stroke);
+  canvas.drawPath(path,Paint()..color=const Color(0xffe5b86d)
+   ..strokeWidth=23..strokeCap=StrokeCap.round..strokeJoin=StrokeJoin.round
+   ..style=PaintingStyle.stroke);
+ }
+ @override bool shouldRepaint(covariant _WindingRoadPainter old)=>false;
 }
