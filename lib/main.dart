@@ -70,7 +70,9 @@ class Game extends StatefulWidget {
  @override State<Game> createState()=>_GameState();
 }
 class _GameState extends State<Game> {
- int level=0,points=0,opened=0;
+ int level=0,points=10,opened=0;
+ String daily='';
+ final Set<int> hidden={};
  bool inGame=false,answered=false,rewardShowing=false,sounds=true;
  int? chosen;
  final Set<int> completed={};
@@ -82,7 +84,8 @@ class _GameState extends State<Game> {
   if(!mounted)return;
   setState((){
    opened=(p.getInt('opened')??p.getInt('level')??0).clamp(0,500);
-   points=p.getInt('points')??0;
+   points=p.getInt('points')??10;
+   daily=p.getString('daily')??'';
    sounds=p.getBool('sounds')??true;
    completed.addAll((p.getStringList('completed')??[]).map(int.tryParse).whereType<int>().where((n)=>n>=0&&n<500));
   });
@@ -91,6 +94,7 @@ class _GameState extends State<Game> {
   final p=await SharedPreferences.getInstance();
   await p.setInt('opened',opened);
   await p.setInt('points',points);
+  await p.setString('daily',daily);
   await p.setBool('sounds',sounds);
   await p.setStringList('completed',completed.map((n)=>n.toString()).toList());
  }
@@ -129,35 +133,70 @@ class _GameState extends State<Game> {
    setState(()=>points+=50);_save();_notice('ربحت 50 نقطة!');
   });
  }
+
+ Future<void> _popup(String title,String message)async{
+  if(!mounted)return;
+  await showDialog<void>(context:context,builder:(ctx)=>AlertDialog(
+   backgroundColor:const Color(0xff39215d),
+   title:Text(title,textAlign:TextAlign.center,style:const TextStyle(color:Color(0xffffd87a))),
+   content:Text(message,textAlign:TextAlign.center),
+   actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('متابعة'))]));
+ }
+ void _daily(){
+  final now=DateTime.now();
+  final today=now.year.toString()+'-'+now.month.toString()+'-'+now.day.toString();
+  if(daily==today){_popup('🎁 المكافأة اليومية','استلمت مكافأتك اليوم، عد غداً!');return;}
+  setState((){points+=30;daily=today;});_save();
+  _popup('🎁 مكافأة يومية','حصلت على 30 نقطة!');
+ }
  void _enter(int n){
   if(n>opened||n>=500)return;
-  setState((){level=n;chosen=null;answered=false;inGame=true;});
+  final newRegion=n>0&&n%50==0&&level!=n;
+  setState((){level=n;chosen=null;answered=false;inGame=true;hidden.clear();});
+  if(newRegion)WidgetsBinding.instance.addPostFrameCallback((_){
+   if(mounted)_popup('🌟 مرحباً في '+regions[n~/50],'بدأت مغامرة جديدة من 50 مرحلة!');
+  });
  }
  void _choose(int n){
-  if(answered)return;
+  if(answered||hidden.contains(n))return;
   final good=n==puzzles[level].correct;
   setState((){
    chosen=n;answered=true;
-   if(good&&!completed.contains(level)){
-    completed.add(level);points+=10;
-    if(level==opened)opened=(opened+1).clamp(0,500);
-   }
+   if(good){
+    if(!completed.contains(level)){
+     completed.add(level);points+=10;
+     if(level==opened)opened=(opened+1).clamp(0,500);
+    }
+   }else{points=(points-20).clamp(0,99999999);}
   });
   _save();
+  _popup(good?'🌟 إجابة صحيحة':'❌ إجابة خاطئة',
+   good?'أحسنت! انتقل للمرحلة التالية.':'خسرت 20 نقطة. حاول مجدداً.');
  }
  void _hint(){
   if(answered)return;
-  if(points<20){_notice('تحتاج إلى 20 نقطة');return;}
-  setState(()=>points-=20);_save();
-  _notice('الإجابة: '+puzzles[level].options[puzzles[level].correct]);
+  if(points<50){_popup('نقاط غير كافية','تحتاج إلى 50 نقطة.');return;}
+  setState(()=>points-=50);_save();
+  _popup('💡 الإجابة',puzzles[level].options[puzzles[level].correct]);
+ }
+ void _removeTwo(){
+  if(answered||hidden.isNotEmpty)return;
+  if(points<20){_popup('نقاط غير كافية','تحتاج إلى 20 نقطة.');return;}
+  final correct=puzzles[level].correct;
+  setState((){
+   points-=20;
+   hidden.addAll([0,1,2,3].where((i)=>i!=correct).take(2));
+  });_save();
  }
  void _next(){
-  if(chosen!=puzzles[level].correct){setState((){answered=false;chosen=null;});return;}
+  if(chosen!=puzzles[level].correct){
+   setState((){answered=false;chosen=null;});return;
+  }
   final n=level+1;
-  setState((){inGame=false;answered=false;chosen=null;});
+  setState((){inGame=false;answered=false;chosen=null;hidden.clear();});
   if(n<500&&n<=opened)_enter(n);
   if(n%5==0&&n<500)_showBetween();
-  if(n==500)_notice('مبروك! أكملت جميع المراحل');
+  if(n==500)_popup('🏆 تهانينا','أكملت جميع المراحل!');
  }
  @override void dispose(){interstitial?.dispose();rewarded?.dispose();super.dispose();}
  Widget _map(){
