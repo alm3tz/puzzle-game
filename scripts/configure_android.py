@@ -18,5 +18,11 @@ for entry in list(app.findall("meta-data")):
     if entry.attrib.get(ns+"name") == name:
         app.remove(entry)
 ET.SubElement(app, "meta-data", {ns+"name": name, ns+"value": "ca-app-pub-7952445820014663~9340646779"})
+app.set(ns+"label", "رحلة الألغاز")
+app.set(ns+"icon", "@drawable/game_icon")
+icon_src = Path("android_assets/game_icon.xml")
+icon_dest = Path("android/app/src/main/res/drawable/game_icon.xml")
+icon_dest.parent.mkdir(parents=True, exist_ok=True)
+icon_dest.write_bytes(icon_src.read_bytes())
 tree.write(path, encoding="utf-8", xml_declaration=True)
 print("AdMob App ID configured")
