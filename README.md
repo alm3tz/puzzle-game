@@ -1,1 +1,1 @@
-# arabic-puzzle-game
+# puzzle-game
