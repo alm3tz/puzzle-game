@@ -236,11 +236,11 @@ class _GameState extends State<Game> {
       Text('المنطقة ${region+1}  •  $count/50',
        style:const TextStyle(color:Colors.white70)),
       const SizedBox(height:12),
-      SizedBox(height:1870,child:LayoutBuilder(builder:(context,c){
+      SizedBox(height:2600,child:LayoutBuilder(builder:(context,c){
        final width=c.maxWidth;
        Offset pos(int i){
         final t=i/49.0;
-        return Offset(width*(.5+.32*math.sin(i*math.pi/9)),35+t*1800);
+        return Offset(width*(.5+.32*math.sin(i*math.pi/9)),35+t*2530);
        }
        return Stack(children:[
         Positioned.fill(child:CustomPaint(painter:_AdventurePainter(List.generate(50,pos),region))),
@@ -361,13 +361,13 @@ class _AdventurePainter extends CustomPainter {
   final rng=math.Random(region+41);
   final sky=Paint()..color=const Color(0x3349d5b6);
   canvas.drawCircle(Offset(size.width*.82,70),45,sky);
-  for(var i=0;i<13;i++){
+  for(var i=0;i<19;i++){
    final x=rng.nextDouble()*size.width;
-   final y=i*145.0+25;
+   final y=i*140.0+25;
    _mountain(canvas,Offset(x,y),28+rng.nextDouble()*33,
     i.isEven?const Color(0xff7087a4):const Color(0xff4b6c7e));
   }
-  for(var i=0;i<155;i++){
+  for(var i=0;i<210;i++){
    final x=12+rng.nextDouble()*(size.width-24);
    final y=20+rng.nextDouble()*(size.height-40);
    final near=points.any((p)=>(p-Offset(x,y)).distance<39);
@@ -380,7 +380,7 @@ class _AdventurePainter extends CustomPainter {
    }
   }
   for(var i=0;i<4;i++){
-   final y=210+i*440.0;
+   final y=280+i*610.0;
    final x=i.isEven?size.width*.13:size.width*.86;
    _castle(canvas,Offset(x,y),region.isEven?const Color(0xffd8c1a2):const Color(0xffa9a4cb));
   }
