@@ -227,8 +227,7 @@ class _GameState extends State<Game> {
         return Offset(width*(.5+.34*math.sin(i*math.pi/8)),1070-t*1040);
        }
        return Stack(children:[
-        Positioned.fill(child:CustomPaint(painter:_WindingRoadPainter(
-         List.generate(50,pos)))),
+        Positioned.fill(child:CustomPaint(painter:_AdventurePainter(List.generate(50,pos),region))),
         for(var i=0;i<50;i++)
          Positioned(left:pos(i).dx-23,top:pos(i).dy-23,
           child:Builder(builder:(context){
@@ -245,7 +244,7 @@ class _GameState extends State<Game> {
              child:Center(child:locked?const Icon(Icons.lock,size:17,color:Colors.white70):
               done?const Icon(Icons.star,color:Color(0xff70400d)):
               Text((index+1).toString(),style:const TextStyle(fontSize:13,
-               fontWeight:FontWeight.bold,color:Colors.white))))));
+               fontWeight:FontWeight.bold,color:Colors.white)))));
           })),
        ]);
       })),
@@ -334,19 +333,100 @@ class _GameState extends State<Game> {
  );
 }
 
-class _TrailPainter extends CustomPainter {
- final int row;
- const _TrailPainter(this.row);
- @override void paint(Canvas canvas,Size size){
-  final paint=Paint()..color=const Color(0x99ffcd73)..strokeWidth=9..strokeCap=StrokeCap.round..style=PaintingStyle.stroke;
-  final path=Path()..moveTo(size.width*.1,size.height*.5);
-  path.cubicTo(size.width*.3,row.isEven?4:size.height-4,
-   size.width*.7,row.isEven?size.height-4:4,size.width*.9,size.height*.5);
-  canvas.drawPath(path,paint);
- }
- @override bool shouldRepaint(covariant _TrailPainter old)=>old.row!=row;
-}
 
+class _AdventurePainter extends CustomPainter {
+ final List<Offset> points;
+ final int region;
+ const _AdventurePainter(this.points,this.region);
+ @override void paint(Canvas canvas,Size size){
+  final rng=math.Random(region+41);
+  final sky=Paint()..color=const Color(0x3349d5b6);
+  canvas.drawCircle(Offset(size.width*.82,70),45,sky);
+  for(var i=0;i<13;i++){
+   final x=rng.nextDouble()*size.width;
+   final y=i*88.0+25;
+   _mountain(canvas,Offset(x,y),28+rng.nextDouble()*33,
+    i.isEven?const Color(0xff7087a4):const Color(0xff4b6c7e));
+  }
+  for(var i=0;i<95;i++){
+   final x=12+rng.nextDouble()*(size.width-24);
+   final y=20+rng.nextDouble()*(size.height-40);
+   final near=points.any((p)=>(p-Offset(x,y)).distance<39);
+   if(near)continue;
+   if(region%3==2&&i%4==0){
+    _rock(canvas,Offset(x,y),9+rng.nextDouble()*12);
+   }else{
+    _tree(canvas,Offset(x,y),7+rng.nextDouble()*9,
+     i.isEven?const Color(0xff216b4b):const Color(0xff15503c));
+   }
+  }
+  for(var i=0;i<4;i++){
+   final y=155+i*270.0;
+   final x=i.isEven?size.width*.13:size.width*.86;
+   _castle(canvas,Offset(x,y),region.isEven?const Color(0xffd8c1a2):const Color(0xffa9a4cb));
+  }
+  final road=Path()..moveTo(points.first.dx,points.first.dy);
+  for(var i=1;i<points.length;i++){
+   final a=points[i-1],b=points[i];
+   final mid=Offset((a.dx+b.dx)/2,(a.dy+b.dy)/2);
+   road.quadraticBezierTo(a.dx,a.dy,mid.dx,mid.dy);
+  }
+  road.lineTo(points.last.dx,points.last.dy);
+  canvas.drawPath(road,Paint()..color=const Color(0xff644524)
+   ..strokeWidth=35..strokeCap=StrokeCap.round..style=PaintingStyle.stroke);
+  canvas.drawPath(road,Paint()..color=const Color(0xfff0c57d)
+   ..strokeWidth=27..strokeCap=StrokeCap.round..style=PaintingStyle.stroke);
+  canvas.drawPath(road,Paint()..color=const Color(0xfff9dfaa)
+   ..strokeWidth=2..strokeCap=StrokeCap.round..style=PaintingStyle.stroke);
+ }
+ void _mountain(Canvas c,Offset o,double r,Color color){
+  final p=Path()..moveTo(o.dx-r,o.dy+r*.55)..lineTo(o.dx,o.dy-r)
+   ..lineTo(o.dx+r,o.dy+r*.55)..close();
+  c.drawPath(p,Paint()..color=color.withValues(alpha:.55));
+  final snow=Path()..moveTo(o.dx-r*.23,o.dy-r*.55)..lineTo(o.dx,o.dy-r)
+   ..lineTo(o.dx+r*.26,o.dy-r*.51)..lineTo(o.dx,o.dy-r*.64)..close();
+  c.drawPath(snow,Paint()..color=const Color(0xfff4f1e9).withValues(alpha:.8));
+ }
+ void _tree(Canvas c,Offset o,double r,Color green){
+  c.drawRRect(RRect.fromRectAndRadius(
+   Rect.fromCenter(center:o.translate(0,r*.4),width:r*.34,height:r*1.3),
+   const Radius.circular(2)),Paint()..color=const Color(0xff6b432c));
+  for(var j=0;j<3;j++){
+   final y=o.dy-r*.4+j*r*.42;
+   final w=r*(.68+j*.23);
+   final p=Path()..moveTo(o.dx,y-r*.8)
+    ..lineTo(o.dx-w,y+r*.45)..lineTo(o.dx+w,y+r*.45)..close();
+   c.drawPath(p,Paint()..color=green);
+  }
+ }
+ void _rock(Canvas c,Offset o,double r){
+  final p=Path()..moveTo(o.dx-r,o.dy+r*.4)..lineTo(o.dx-r*.5,o.dy-r*.5)
+   ..lineTo(o.dx+r*.4,o.dy-r*.8)..lineTo(o.dx+r,o.dy+r*.3)..close();
+  c.drawPath(p,Paint()..color=const Color(0xffa4a2a9));
+  c.drawLine(o.translate(-r*.5,-r*.5),o.translate(r*.1,r*.2),
+   Paint()..color=const Color(0xff747583)..strokeWidth=2);
+ }
+ void _castle(Canvas c,Offset o,Color stone){
+  final p=Paint()..color=stone;
+  c.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(o.dx-19,o.dy-7,38,31),
+   const Radius.circular(3)),p);
+  for(final dx in [-21.0,13.0]){
+   c.drawRect(Rect.fromLTWH(o.dx+dx,o.dy-19,9,40),p);
+   c.drawRect(Rect.fromLTWH(o.dx+dx-2,o.dy-23,13,7),p);
+  }
+  final roof=Path()..moveTo(o.dx-9,o.dy-7)..lineTo(o.dx,o.dy-28)
+   ..lineTo(o.dx+9,o.dy-7)..close();
+  c.drawPath(roof,Paint()..color=const Color(0xff9a4266));
+  c.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(o.dx-5,o.dy+7,10,17),
+   const Radius.circular(5)),Paint()..color=const Color(0xff4d334c));
+  c.drawRect(Rect.fromLTWH(o.dx+18,o.dy-28,2,15),
+   Paint()..color=const Color(0xfff6e1a0));
+  final flag=Path()..moveTo(o.dx+20,o.dy-28)..lineTo(o.dx+33,o.dy-23)
+   ..lineTo(o.dx+20,o.dy-19)..close();
+  c.drawPath(flag,Paint()..color=const Color(0xffffd36b));
+ }
+ @override bool shouldRepaint(covariant _AdventurePainter old)=>old.region!=region;
+}
 class _WindingRoadPainter extends CustomPainter{
  final List<Offset> points;
  const _WindingRoadPainter(this.points);
