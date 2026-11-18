@@ -1,0 +1,30 @@
+name: Android APK (test ads)
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/arabic-puzzles-admob]
+  pull_request:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Generate Android platform
+        run: flutter create --platforms=android --org com.alm3tz .
+      - name: Configure AdMob app ID and internet permission
+        run: python3 scripts/configure_android.py
+      - name: Dependencies
+        run: flutter pub get
+      - name: Analyze
+        run: flutter analyze
+      - name: Test
+        run: flutter test
+      - name: Build APK using Google test ads
+        run: flutter build apk --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: puzzle-game-test-ads-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
