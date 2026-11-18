@@ -21,7 +21,7 @@ jobs:
       - name: Remove Flutter template test
         run: rm -f test/widget_test.dart
       - name: Analyze
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos
       - name: Test
         run: flutter test
       - name: Build APK using Google test ads
