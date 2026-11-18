@@ -17,7 +17,14 @@ final puzzles = buildLevels();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await MobileAds.instance.initialize();
-  runApp(const MaterialApp(
+  runApp(MaterialApp(
+    title: 'رحلة الألغاز',
+    theme: ThemeData(
+      useMaterial3: true,
+      scaffoldBackgroundColor: const Color(0xff190d36),
+      colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xffa755f7), brightness: Brightness.dark),
+      appBarTheme: const AppBarTheme(backgroundColor: Color(0xff301357), foregroundColor: Color(0xffffdb81)),
+    ),
     debugShowCheckedModeBanner: false,
     home: Directionality(textDirection: TextDirection.rtl, child: Game()),
   ));
@@ -154,55 +161,97 @@ class _GameState extends State<Game> {
  }
  @override void dispose(){interstitial?.dispose();rewarded?.dispose();super.dispose();}
  Widget _map(){
+  const palette=<Color>[Color(0xff306f60),Color(0xff2d6286),Color(0xff75538f),Color(0xff306c9b),Color(0xff986235),Color(0xff734c98),Color(0xff377a79),Color(0xff89547a),Color(0xff42699e),Color(0xffa27d39)];
   return ListView.builder(
-   padding:const EdgeInsets.all(12),itemCount:10,
-   itemBuilder:(context,region)=>Card(
-    margin:const EdgeInsets.only(bottom:16),
-    child:Padding(padding:const EdgeInsets.all(12),child:Column(children:[
-     Text('🌍 '+regions[region],style:Theme.of(context).textTheme.titleLarge),
-     const SizedBox(height:12),
-     for(var row=0;row<10;row++)
-      Row(mainAxisAlignment:MainAxisAlignment.spaceAround,children:[
-       for(var col=0;col<5;col++)
-        Builder(builder:(context){
-         final index=region*50+row*5+(row.isEven?col:4-col);
-         final locked=index>opened,done=completed.contains(index);
-         return Padding(padding:const EdgeInsets.symmetric(vertical:5),child:
-          InkWell(onTap:locked?null:()=>_enter(index),
-           borderRadius:BorderRadius.circular(40),
-           child:CircleAvatar(radius:23,
-            backgroundColor:done?Colors.green.shade200:locked?Colors.grey.shade300:Theme.of(context).colorScheme.primaryContainer,
-            child:locked?const Icon(Icons.lock,size:17):done?const Icon(Icons.star,size:20):Text((index+1).toString(),style:const TextStyle(fontSize:12)),
-           )));
-        }),
-      ]),
-    ])),
-   ),
+   padding:const EdgeInsets.all(14),itemCount:10,
+   itemBuilder:(context,region){
+    final start=region*50;
+    final count=completed.where((i)=>i>=start&&i<start+50).length;
+    return Container(
+     margin:const EdgeInsets.only(bottom:20),
+     decoration:BoxDecoration(
+      gradient:LinearGradient(colors:[palette[region],const Color(0xff241344)],begin:Alignment.topLeft,end:Alignment.bottomRight),
+      borderRadius:BorderRadius.circular(28),
+      border:Border.all(color:const Color(0xffffd77e),width:2),
+      boxShadow:const [BoxShadow(color:Colors.black38,blurRadius:12,offset:Offset(0,5))]),
+     child:Padding(padding:const EdgeInsets.all(12),child:Column(children:[
+      Text('✦ '+regions[region]+' ✦',textAlign:TextAlign.center,
+       style:const TextStyle(fontSize:22,fontWeight:FontWeight.w900,color:Color(0xffffd77e))),
+      Text('المراحل '+(start+1).toString()+' – '+(start+50).toString()+'   •   '+count.toString()+'/50',
+       style:const TextStyle(color:Colors.white70)),
+      const SizedBox(height:14),
+      for(var row=0;row<10;row++)
+       SizedBox(height:62,child:Stack(children:[
+        Positioned.fill(child:CustomPaint(painter:_TrailPainter(row))),
+        Row(mainAxisAlignment:MainAxisAlignment.spaceAround,children:[
+         for(var col=0;col<5;col++)
+          Builder(builder:(context){
+           final index=start+row*5+(row.isEven?col:4-col);
+           final locked=index>opened,done=completed.contains(index);
+           return InkWell(onTap:locked?null:()=>_enter(index),
+            borderRadius:BorderRadius.circular(40),
+            child:Container(width:48,height:48,
+             decoration:BoxDecoration(shape:BoxShape.circle,
+              gradient:LinearGradient(colors:locked?[const Color(0xff858197),const Color(0xff353047)]
+               :done?[const Color(0xffffe892),const Color(0xffc78419)]
+               :[const Color(0xffd889ff),const Color(0xff7134b7)]),
+              border:Border.all(color:locked?Colors.white38:const Color(0xffffe49c),width:2.4),
+              boxShadow:locked?[]:[const BoxShadow(color:Colors.black38,blurRadius:7,offset:Offset(0,3))]),
+             child:Center(child:locked?const Icon(Icons.lock,color:Colors.white70,size:19):
+              done?const Icon(Icons.star,color:Color(0xff62370b),size:25):
+              Text((index+1).toString(),style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w900))),
+            ));
+          }),
+        ]),
+       ])),
+     ])),
+    );
+   },
   );
  }
  Widget _play(){
   final p=puzzles[level];
-  return SingleChildScrollView(padding:const EdgeInsets.all(16),child:
-   Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
-    Text('المرحلة '+(level+1).toString()+' / 500 — '+p.category,textAlign:TextAlign.center),
-    const SizedBox(height:16),
-    Card(child:Padding(padding:const EdgeInsets.all(24),child:Text(p.question,
-     textAlign:TextAlign.center,style:const TextStyle(fontSize:22,fontWeight:FontWeight.bold)))),
-    const SizedBox(height:16),
+  return SingleChildScrollView(padding:const EdgeInsets.all(18),
+   child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
+    Center(child:Container(padding:const EdgeInsets.symmetric(horizontal:25,vertical:12),
+     decoration:BoxDecoration(color:const Color(0xff80369b),borderRadius:BorderRadius.circular(22),
+      border:Border.all(color:const Color(0xffffd67c),width:2)),
+     child:Text('المرحلة '+(level+1).toString()+' • '+p.category,
+      style:const TextStyle(color:Colors.white,fontSize:20,fontWeight:FontWeight.bold)))),
+    const SizedBox(height:24),
+    Container(padding:const EdgeInsets.symmetric(horizontal:20,vertical:35),
+     decoration:BoxDecoration(gradient:const LinearGradient(colors:[Color(0xffffe7b7),Color(0xffffc77c)]),
+      borderRadius:BorderRadius.circular(22),border:Border.all(color:const Color(0xffffb54c),width:3),
+      boxShadow:const [BoxShadow(color:Colors.black38,blurRadius:12,offset:Offset(0,6))]),
+     child:Text(p.question,textAlign:TextAlign.center,
+      style:const TextStyle(fontSize:23,fontWeight:FontWeight.w900,color:Color(0xff322047)))),
+    const SizedBox(height:22),
     for(var i=0;i<4;i++)
-     Padding(padding:const EdgeInsets.only(bottom:8),child:OutlinedButton(
-      onPressed:answered?null:()=>_choose(i),
-      style:OutlinedButton.styleFrom(padding:const EdgeInsets.all(16),
-       backgroundColor:answered&&i==p.correct?Colors.green.shade100:
-        answered&&i==chosen?Colors.red.shade100:null),
-      child:Text(p.options[i]))),
+     Padding(padding:const EdgeInsets.only(bottom:12),child:Material(color:Colors.transparent,
+      child:InkWell(onTap:answered?null:()=>_choose(i),borderRadius:BorderRadius.circular(18),
+       child:Container(padding:const EdgeInsets.all(17),
+        decoration:BoxDecoration(color:answered&&i==p.correct?const Color(0xffa6e8ae):
+         answered&&i==chosen?const Color(0xffffa7a7):const Color(0xffffd9a3),
+         borderRadius:BorderRadius.circular(18),border:Border.all(color:const Color(0xffd29a57),width:2)),
+        child:Text(p.options[i],textAlign:TextAlign.center,
+         style:const TextStyle(color:Color(0xff322047),fontSize:18,fontWeight:FontWeight.bold)))))),
     if(answered)...[
-     Text(chosen==p.correct?'إجابة صحيحة! ⭐':'إجابة غير صحيحة. حاول مجدداً.',textAlign:TextAlign.center),
-     FilledButton(onPressed:_next,child:Text(chosen==p.correct?'المرحلة التالية':'إعادة المحاولة')),
-    ]else TextButton.icon(onPressed:_hint,icon:const Icon(Icons.lightbulb_outline),
-     label:const Text('تلميح مقابل 20 نقطة')),
+     Text(chosen==p.correct?'🌟 أحسنت! إجابة صحيحة':'حاول مرة أخرى!',
+      textAlign:TextAlign.center,style:const TextStyle(fontSize:19,color:Color(0xffffd67c))),
+     _gameButton(chosen==p.correct?'المرحلة التالية':'إعادة المحاولة',_next),
+    ]else _gameButton('💡 تلميح — 20 نقطة',_hint,purple:true),
    ]));
  }
+ Widget _gameButton(String label,VoidCallback callback,{bool purple=false})=>
+  Container(margin:const EdgeInsets.symmetric(vertical:6),
+   decoration:BoxDecoration(gradient:LinearGradient(colors:purple?
+    [const Color(0xffac65ec),const Color(0xff702eb0)]:
+    [const Color(0xff80e958),const Color(0xff1b9633)]),
+    borderRadius:BorderRadius.circular(18),
+    border:Border.all(color:purple?const Color(0xffd6a6ff):const Color(0xffbcff91),width:2)),
+   child:TextButton(onPressed:callback,
+    child:Padding(padding:const EdgeInsets.symmetric(vertical:8),
+     child:Text(label,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w900,fontSize:17)))));
  @override Widget build(BuildContext context)=>Scaffold(
   appBar:AppBar(
    title:Text(inGame?'المرحلة '+(level+1).toString():'🧩 رحلة الألغاز'),
@@ -216,11 +265,23 @@ class _GameState extends State<Game> {
     mainAxisAlignment:MainAxisAlignment.spaceAround,
     children:[Chip(label:Text('⭐ '+points.toString()+' نقطة')),
      Chip(label:Text('🏆 '+completed.length.toString()+' / 500'))])),
-   LinearProgressIndicator(value:completed.length/500),
+   LinearProgressIndicator(value:completed.length/500,color:const Color(0xffffd47a),backgroundColor:const Color(0xff483061),minHeight:7),
    Expanded(child:inGame?_play():_map()),
-   FilledButton.tonalIcon(onPressed:_watch,icon:const Icon(Icons.ondemand_video),
-    label:const Text('فيديو مكافأة — 50 نقطة')),
+   Padding(padding:const EdgeInsets.symmetric(horizontal:20),child:_gameButton('🎁 فيديو مكافأة — 50 نقطة',_watch)),
    const Center(child:AdStrip(upper:false)),
   ])),
  );
+}
+
+class _TrailPainter extends CustomPainter {
+ final int row;
+ const _TrailPainter(this.row);
+ @override void paint(Canvas canvas,Size size){
+  final paint=Paint()..color=const Color(0x99ffcd73)..strokeWidth=9..strokeCap=StrokeCap.round..style=PaintingStyle.stroke;
+  final path=Path()..moveTo(size.width*.1,size.height*.5);
+  path.cubicTo(size.width*.3,row.isEven?4:size.height-4,
+   size.width*.7,row.isEven?size.height-4:4,size.width*.9,size.height*.5);
+  canvas.drawPath(path,paint);
+ }
+ @override bool shouldRepaint(covariant _TrailPainter old)=>old.row!=row;
 }
