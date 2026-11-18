@@ -145,7 +145,7 @@ class _GameState extends State<Game> {
  }
  void _daily(){
   final now=DateTime.now();
-  final today=now.year.toString()+'-'+now.month.toString()+'-'+now.day.toString();
+  final today='${now.year}-${now.month}-${now.day}';
   if(daily==today){_popup('🎁 المكافأة اليومية','استلمت مكافأتك اليوم، عد غداً!');return;}
   setState((){points+=30;daily=today;});_save();
   _popup('🎁 مكافأة يومية','حصلت على 30 نقطة!');
@@ -154,9 +154,9 @@ class _GameState extends State<Game> {
   if(n>opened||n>=500)return;
   final newRegion=n>0&&n%50==0&&level!=n;
   setState((){level=n;chosen=null;answered=false;inGame=true;hidden.clear();});
-  if(newRegion)WidgetsBinding.instance.addPostFrameCallback((_){
-   if(mounted)_popup('🌟 مرحباً في '+regions[n~/50],'بدأت مغامرة جديدة من 50 مرحلة!');
-  });
+  if(newRegion){ WidgetsBinding.instance.addPostFrameCallback((_){
+   if(mounted)_popup('🌟 مرحباً في ${regions[n~/50]}','بدأت مغامرة جديدة من 50 مرحلة!');
+  }); }
  }
  void _choose(int n){
   if(answered||hidden.contains(n))return;
@@ -215,9 +215,9 @@ class _GameState extends State<Game> {
       borderRadius:BorderRadius.circular(28),
       border:Border.all(color:const Color(0xffffd47b),width:2)),
      child:Padding(padding:const EdgeInsets.all(12),child:Column(children:[
-      Text('✦ '+regions[region]+' ✦',style:const TextStyle(fontSize:21,
+      Text('✦ ${regions[region]} ✦',style:const TextStyle(fontSize:21,
        fontWeight:FontWeight.bold,color:Color(0xffffd77e))),
-      Text('المنطقة '+(region+1).toString()+'  •  '+count.toString()+'/50',
+      Text('المنطقة ${region+1}  •  $count/50',
        style:const TextStyle(color:Colors.white70)),
       const SizedBox(height:12),
       SizedBox(height:1100,child:LayoutBuilder(builder:(context,c){
@@ -258,7 +258,7 @@ class _GameState extends State<Game> {
    padding:const EdgeInsets.symmetric(horizontal:14,vertical:8),
    child:ConstrainedBox(constraints:BoxConstraints(minHeight:size.maxHeight),
     child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
-     Text('المرحلة '+(level+1).toString()+' • '+p.category,
+     Text('المرحلة ${level+1} • ${p.category}',
       textAlign:TextAlign.center,style:const TextStyle(fontSize:15,color:Color(0xffffd67c))),
      const SizedBox(height:8),
      Container(padding:const EdgeInsets.symmetric(horizontal:12,vertical:18),
@@ -307,7 +307,7 @@ class _GameState extends State<Game> {
      child:Text(label,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w900,fontSize:13)))));
  @override Widget build(BuildContext context)=>Scaffold(
   appBar:AppBar(
-   title:Text(inGame?'المرحلة '+(level+1).toString():'🧩 رحلة الألغاز'),
+   title:Text(inGame?'المرحلة ${level+1}':'🧩 رحلة الألغاز'),
    centerTitle:true,
    leading:inGame?IconButton(icon:const Icon(Icons.arrow_back),onPressed:()=>setState(()=>inGame=false)):null,
    actions:[IconButton(tooltip:'الصوت',icon:Icon(sounds?Icons.volume_up:Icons.volume_off),
@@ -316,8 +316,8 @@ class _GameState extends State<Game> {
    const Center(child:AdStrip(upper:true)),
    Padding(padding:const EdgeInsets.all(8),child:Row(
     mainAxisAlignment:MainAxisAlignment.spaceAround,
-    children:[Chip(label:Text('⭐ '+points.toString()+' نقطة')),
-     Chip(label:Text('🏆 '+completed.length.toString()+' / 500'))])),
+    children:[Chip(label:Text('⭐ $points نقطة')),
+     Chip(label:Text('🏆 ${completed.length} / 500'))])),
    LinearProgressIndicator(value:completed.length/500,color:const Color(0xffffd47a),backgroundColor:const Color(0xff483061),minHeight:7),
    Expanded(child:inGame?_play():_map()),
    Row(children:[
@@ -426,22 +426,4 @@ class _AdventurePainter extends CustomPainter {
   c.drawPath(flag,Paint()..color=const Color(0xffffd36b));
  }
  @override bool shouldRepaint(covariant _AdventurePainter old)=>old.region!=region;
-}
-class _WindingRoadPainter extends CustomPainter{
- final List<Offset> points;
- const _WindingRoadPainter(this.points);
- @override void paint(Canvas canvas,Size size){
-  final path=Path()..moveTo(points.first.dx,points.first.dy);
-  for(var i=1;i<points.length;i++){
-   final a=points[i-1],b=points[i];
-   path.lineTo(b.dx,b.dy);
-  }
-  canvas.drawPath(path,Paint()..color=const Color(0xff674726)
-   ..strokeWidth=31..strokeCap=StrokeCap.round..strokeJoin=StrokeJoin.round
-   ..style=PaintingStyle.stroke);
-  canvas.drawPath(path,Paint()..color=const Color(0xffe5b86d)
-   ..strokeWidth=23..strokeCap=StrokeCap.round..strokeJoin=StrokeJoin.round
-   ..style=PaintingStyle.stroke);
- }
- @override bool shouldRepaint(covariant _WindingRoadPainter old)=>false;
 }
