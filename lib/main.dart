@@ -73,6 +73,7 @@ class Game extends StatefulWidget {
 class _GameState extends State<Game> {
  int level=0,points=10,opened=0;
  String daily='';
+ int dailyStreak=0;
  final Set<int> hidden={};
  bool inGame=false,answered=false,rewardShowing=false,sounds=true;
  int? chosen;
@@ -87,6 +88,7 @@ class _GameState extends State<Game> {
    opened=(p.getInt('opened')??p.getInt('level')??0).clamp(0,500);
    points=p.getInt('points')??10;
    daily=p.getString('daily')??'';
+   dailyStreak=p.getInt('daily_streak')??(daily.isEmpty?0:1);
    sounds=p.getBool('sounds')??true;
    completed.addAll((p.getStringList('completed')??[]).map(int.tryParse).whereType<int>().where((n)=>n>=0&&n<500));
   });
@@ -96,6 +98,7 @@ class _GameState extends State<Game> {
   await p.setInt('opened',opened);
   await p.setInt('points',points);
   await p.setString('daily',daily);
+  await p.setInt('daily_streak',dailyStreak);
   await p.setBool('sounds',sounds);
   await p.setStringList('completed',completed.map((n)=>n.toString()).toList());
  }
@@ -143,12 +146,25 @@ class _GameState extends State<Game> {
    content:Text(message,textAlign:TextAlign.center),
    actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('متابعة'))]));
  }
+
  void _daily(){
   final now=DateTime.now();
-  final today='${now.year}-${now.month}-${now.day}';
-  if(daily==today){_popup('🎁 المكافأة اليومية','استلمت مكافأتك اليوم، عد غداً!');return;}
-  setState((){points+=30;daily=today;});_save();
-  _popup('🎁 مكافأة يومية','حصلت على 30 نقطة!');
+  final today=DateTime(now.year,now.month,now.day);
+  final todayKey='${today.year}-${today.month}-${today.day}';
+  final previous=DateTime.tryParse(daily);
+  final days=previous==null?null:today.difference(previous).inDays;
+  final currentStreak=days==null?0:(days==0?dailyStreak:days==1?dailyStreak:0);
+  if(days==0){
+   _popup('🔥 $currentStreak يوم متواصل','لقد استلمت مكافأتك اليومية، عد غداً!');
+   return;
+  }
+  setState((){
+   dailyStreak=days==1?dailyStreak+1:1;
+   daily=todayKey;
+   points+=30;
+  });
+  _save();
+  _popup('🎁 $dailyStreak يوم متواصل','حصلت على 30 نقطة! عد غداً للحفاظ على سلسلة المكافآت.');
  }
  void _enter(int n){
   if(n>opened||n>=500)return;
@@ -220,11 +236,11 @@ class _GameState extends State<Game> {
       Text('المنطقة ${region+1}  •  $count/50',
        style:const TextStyle(color:Colors.white70)),
       const SizedBox(height:12),
-      SizedBox(height:1100,child:LayoutBuilder(builder:(context,c){
+      SizedBox(height:1870,child:LayoutBuilder(builder:(context,c){
        final width=c.maxWidth;
        Offset pos(int i){
         final t=i/49.0;
-        return Offset(width*(.5+.34*math.sin(i*math.pi/8)),1070-t*1040);
+        return Offset(width*(.5+.32*math.sin(i*math.pi/9)),35+t*1800);
        }
        return Stack(children:[
         Positioned.fill(child:CustomPaint(painter:_AdventurePainter(List.generate(50,pos),region))),
@@ -320,14 +336,17 @@ class _GameState extends State<Game> {
      Chip(label:Text('🏆 ${completed.length} / 500'))])),
    LinearProgressIndicator(value:completed.length/500,color:const Color(0xffffd47a),backgroundColor:const Color(0xff483061),minHeight:7),
    Expanded(child:inGame?_play():_map()),
-   Row(children:[
-    Expanded(child:TextButton.icon(onPressed:inGame?null:_daily,
-     icon:const Icon(Icons.calendar_today,size:16),
-     label:const Text('مكافأة يومية',style:TextStyle(fontSize:12)))),
+   if(!inGame)Row(children:[
+    Expanded(child:TextButton.icon(onPressed:_daily,
+     icon:const Icon(Icons.local_fire_department,size:17),
+     label:Text('مكافأة يومية • $dailyStreak يوم',style:const TextStyle(fontSize:12)))),
     Expanded(child:TextButton.icon(onPressed:_watch,
      icon:const Icon(Icons.smart_display,size:17),
      label:const Text('فيديو +50',style:TextStyle(fontSize:12)))),
-   ]),
+   ]) else Align(alignment:Alignment.center,
+    child:TextButton.icon(onPressed:_watch,
+     icon:const Icon(Icons.smart_display,size:17),
+     label:const Text('فيديو مكافأة +50',style:TextStyle(fontSize:12)))),
    const Center(child:AdStrip(upper:false)),
   ])),
  );
@@ -344,11 +363,11 @@ class _AdventurePainter extends CustomPainter {
   canvas.drawCircle(Offset(size.width*.82,70),45,sky);
   for(var i=0;i<13;i++){
    final x=rng.nextDouble()*size.width;
-   final y=i*88.0+25;
+   final y=i*145.0+25;
    _mountain(canvas,Offset(x,y),28+rng.nextDouble()*33,
     i.isEven?const Color(0xff7087a4):const Color(0xff4b6c7e));
   }
-  for(var i=0;i<95;i++){
+  for(var i=0;i<155;i++){
    final x=12+rng.nextDouble()*(size.width-24);
    final y=20+rng.nextDouble()*(size.height-40);
    final near=points.any((p)=>(p-Offset(x,y)).distance<39);
@@ -361,7 +380,7 @@ class _AdventurePainter extends CustomPainter {
    }
   }
   for(var i=0;i<4;i++){
-   final y=155+i*270.0;
+   final y=210+i*440.0;
    final x=i.isEven?size.width*.13:size.width*.86;
    _castle(canvas,Offset(x,y),region.isEven?const Color(0xffd8c1a2):const Color(0xffa9a4cb));
   }
